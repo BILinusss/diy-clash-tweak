@@ -1,0 +1,71 @@
+# 基础配置
+#port: 7890             # HTTP 代理端口
+#socks-port: 7891       # SOCKS5 代理端口
+mixed-port: 7897       # HTTP + SOCKS5 混合端口（推荐用这个）
+allow-lan: false
+mode: rule             # 代理模式：rule / global / direct
+log-level: info
+unified-delay: true    # 统一延迟计算
+find-process-mode: strict
+
+# DNS 配置
+dns:
+  enable: true
+  listen: 127.0.0.1:5335
+  ipv6: false   # 建议关闭，防止 IPv6 导致的分流不稳定
+  enhanced-mode: fake-ip         # 关键配置：fake-ip 模式（推荐）
+  fake-ip-range: 198.18.0.1/16  # 分配给域名的假 IP 段
+  fake-ip-filter:                # 这些域名不用 fake-ip（NTP、局域网等）
+    - "*.lan"
+    - "*.local"
+    - "time.*.com"
+    - "+.ntp.org"
+
+  # 用于解析 DNS 服务器自身域名
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+    - 114.114.114.114
+
+  # 默认 DNS
+  nameserver:
+    - "https://dns.alidns.com/dns-query"   # 阿里 DoH（国内）
+    - "https://doh.pub/dns-query"   # 腾讯 DoH（国内）
+
+  # 备用 DNS
+  fallback:
+    - "https://cloudflare-dns.com/dns-query"   # Cloudflare DoH（国外）
+    - "https://dns.google/dns-query"   # Google DoH（国外）
+
+  # 备用 DNS 过滤
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+    ipcidr:
+      - 240.0.0.0/4
+      - 127.0.0.1/32
+      - 0.0.0.0/32
+    domain:
+      - "+.google.com"
+      - "+.facebook.com"
+      - "+.twitter.com"
+      - "+.youtube.com"
+      - "+.github.com"
+
+# 配置文件管理
+profile:
+  store-selected: true
+  store-fake-ip: false
+
+# 域名 / 流量嗅探
+sniffer:
+  enable: true
+  parse-pure-ip: true
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]
+      override-destination: true
+    TLS:
+      ports: [443, 8443]
+    QUIC:
+      ports: [443, 8443]
