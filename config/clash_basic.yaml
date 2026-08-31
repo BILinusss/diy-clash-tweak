@@ -6,36 +6,63 @@ allow-lan: false
 mode: rule             # 代理模式：rule / global / direct
 log-level: info
 unified-delay: true    # 统一延迟计算
+tcp-concurrent: true   # 并发连接多个 IP，优先使用最快连接
 find-process-mode: strict
+external-controller: 127.0.0.1:9090   # 外部控制 API 地址
 
 # DNS 配置
 dns:
   enable: true
   listen: 127.0.0.1:5335
   ipv6: false   # 建议关闭，防止 IPv6 导致的分流不稳定
+  respect-rules: true
+  use-system-hosts: false
   enhanced-mode: fake-ip         # 关键配置：fake-ip 模式（推荐）
   fake-ip-range: 198.18.0.1/16  # 分配给域名的假 IP 段
-  fake-ip-filter:                # 这些域名不用 fake-ip（NTP、局域网等）
-    - "*.lan"
-    - "*.local"
+  fake-ip-filter-mode: blacklist
+  fake-ip-filter:   # 这些域名不用 fake-ip（本地网络、时间同步、系统网络检测等）
+    - "+.lan"
+    - "+.local"
+    - "+.localhost"
     - "time.*.com"
+    - "ntp.*.com"
     - "+.ntp.org"
+    - "captive.apple.com"
+    - "+.msftconnecttest.com"
+    - "+.msftncsi.com"
 
   # 用于解析 DNS 服务器自身域名
   default-nameserver:
+    - 180.76.76.76
     - 223.5.5.5
     - 119.29.29.29
-    - 114.114.114.114
+    - 8.8.8.8
+
+  # 国内 / 海外域名 DNS 分流
+  nameserver-policy:
+    "geosite:cn,private":
+      - "https://dns.alidns.com/dns-query"
+      - "https://doh.pub/dns-query"
+      - 223.5.5.5
+      - 119.29.29.29
+    "geosite:geolocation-!cn":
+      - "https://cloudflare-dns.com/dns-query"
+      - "https://dns.google/dns-query"
+      - "https://dns.quad9.net/dns-query"
+    "geosite:category-ads-all": rcode://success
 
   # 默认 DNS
   nameserver:
     - "https://dns.alidns.com/dns-query"   # 阿里 DoH（国内）
     - "https://doh.pub/dns-query"   # 腾讯 DoH（国内）
+    - "https://223.6.6.6/dns-query#h3=true"   # 阿里 DoH，强制 HTTP/3
 
   # 备用 DNS
   fallback:
     - "https://cloudflare-dns.com/dns-query"   # Cloudflare DoH（国外）
     - "https://dns.google/dns-query"   # Google DoH（国外）
+    - "https://dns.quad9.net/dns-query"
+    - "https://101.101.101.101/dns-query"
 
   # 备用 DNS 过滤
   fallback-filter:
@@ -45,12 +72,17 @@ dns:
       - 240.0.0.0/4
       - 127.0.0.1/32
       - 0.0.0.0/32
-    domain:
-      - "+.google.com"
-      - "+.facebook.com"
-      - "+.twitter.com"
-      - "+.youtube.com"
-      - "+.github.com"
+
+  # 代理节点域名专用 DNS
+  proxy-server-nameserver:
+    - "https://dns.alidns.com/dns-query"
+    - "https://doh.pub/dns-query"
+
+  # DIRECT 出口专用 DNS
+  direct-nameserver:
+    - "tls://223.5.5.5"
+    - "tls://119.29.29.29"
+    - "tls://114.114.114.114"
 
 # 配置文件管理
 profile:
